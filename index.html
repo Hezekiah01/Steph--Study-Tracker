@@ -1,0 +1,1642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Folio — University Reading Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Mono:wght@300;400;500&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1208;
+    --paper: #f5efe6;
+    --cream: #ede4d5;
+    --parchment: #e0d4c0;
+    --amber: #c8860a;
+    --amber-light: #e8a820;
+    --rust: #9e3d1f;
+    --sage: #4a6741;
+    --muted: #7a6e60;
+    --border: #c8b89a;
+    --shadow: rgba(26,18,8,0.12);
+    --r: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Lora', Georgia, serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(200,134,10,0.07) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 90%, rgba(158,61,31,0.06) 0%, transparent 50%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23f5efe6'/%3E%3Ccircle cx='1' cy='1' r='.5' fill='%23c8b89a' opacity='.3'/%3E%3C/svg%3E");
+  }
+
+  /* ─── TOPBAR ─── */
+  header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+  }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .logo span { color: var(--amber-light); font-style: italic; }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .semester-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    background: rgba(200,134,10,0.18);
+    border: 1px solid var(--amber);
+    color: var(--amber-light);
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.05em;
+  }
+
+  .btn-sm {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    padding: 6px 14px;
+    border-radius: 4px;
+    border: 1px solid var(--amber);
+    background: transparent;
+    color: var(--amber-light);
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .btn-sm:hover { background: var(--amber); color: var(--ink); }
+
+  /* ─── LAYOUT ─── */
+  .layout {
+    display: grid;
+    grid-template-columns: 260px 1fr 300px;
+    gap: 0;
+    min-height: calc(100vh - 60px);
+  }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar {
+    background: var(--cream);
+    border-right: 1px solid var(--border);
+    padding: 1.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .sidebar-section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 1rem 0.5rem 0.4rem;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.6rem 0.8rem;
+    border-radius: var(--r);
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--muted);
+    transition: all 0.18s;
+    border: 1px solid transparent;
+  }
+  .nav-item:hover { background: var(--parchment); color: var(--ink); }
+  .nav-item.active {
+    background: var(--ink);
+    color: var(--amber-light);
+    border-color: var(--ink);
+  }
+  .nav-item .icon { font-size: 1rem; width: 20px; text-align: center; }
+
+  .mini-stats {
+    margin-top: auto;
+    background: var(--ink);
+    border-radius: var(--r);
+    padding: 1rem;
+    color: var(--paper);
+  }
+  .mini-stats-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    color: var(--amber-light);
+    margin-bottom: 0.8rem;
+    text-transform: uppercase;
+  }
+  .mini-stat { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem; }
+  .mini-stat-label { font-size: 0.8rem; color: rgba(245,239,230,0.6); }
+  .mini-stat-value { font-family: 'DM Mono', monospace; font-size: 1rem; color: var(--amber-light); font-weight: 500; }
+
+  /* ─── MAIN CONTENT ─── */
+  main { padding: 2rem; overflow-y: auto; }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ─── DASHBOARD ─── */
+  .dash-hero {
+    background: var(--ink);
+    border-radius: 10px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    color: var(--paper);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .dash-hero::before {
+    content: '📖';
+    position: absolute;
+    right: 2rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 7rem;
+    opacity: 0.06;
+  }
+  .dash-hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .dash-hero h1 em { color: var(--amber-light); font-style: italic; }
+  .dash-hero p { color: rgba(245,239,230,0.65); font-size: 0.9rem; margin-top: 0.4rem; }
+  .dash-hero .streak {
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .streak-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 3.5rem;
+    font-weight: 900;
+    color: var(--amber-light);
+    line-height: 1;
+  }
+  .streak-label { font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .stat-card {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 1.2rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px var(--shadow); }
+  .stat-card-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+  .stat-card-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .stat-card-sub { font-size: 0.78rem; color: var(--muted); margin-top: 0.3rem; }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .section-title .action-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    padding: 5px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--cream);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .section-title .action-btn:hover { background: var(--ink); color: var(--amber-light); border-color: var(--ink); }
+
+  /* Currently Reading */
+  .currently-reading {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .book-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .book-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    border-radius: 4px 0 0 4px;
+  }
+  .book-card.color-amber::before { background: var(--amber); }
+  .book-card.color-rust::before { background: var(--rust); }
+  .book-card.color-sage::before { background: var(--sage); }
+  .book-card.color-ink::before { background: var(--ink); }
+  .book-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px var(--shadow); }
+  .book-card-course {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 0.3rem;
+    text-transform: uppercase;
+  }
+  .book-card-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.2rem; line-height: 1.3; }
+  .book-card-author { font-size: 0.8rem; color: var(--muted); font-style: italic; margin-bottom: 0.8rem; }
+  .progress-bar-wrap { background: var(--cream); border-radius: 10px; height: 6px; margin-bottom: 0.4rem; }
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    background: linear-gradient(90deg, var(--amber), var(--amber-light));
+    transition: width 0.4s ease;
+  }
+  .progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+
+  /* Weekly heatmap */
+  .heatmap-row {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    margin-bottom: 0.4rem;
+  }
+  .heatmap-label { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--muted); width: 24px; }
+  .heatmap-cell {
+    width: 22px;
+    height: 22px;
+    border-radius: 3px;
+    background: var(--parchment);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: transform 0.15s;
+    position: relative;
+  }
+  .heatmap-cell:hover { transform: scale(1.3); z-index: 1; }
+  .heatmap-cell[data-level="1"] { background: rgba(200,134,10,0.25); }
+  .heatmap-cell[data-level="2"] { background: rgba(200,134,10,0.5); }
+  .heatmap-cell[data-level="3"] { background: rgba(200,134,10,0.75); }
+  .heatmap-cell[data-level="4"] { background: var(--amber); }
+  .heatmap-months { display: flex; gap: 4px; padding-left: 28px; margin-bottom: 0.3rem; }
+  .heatmap-month { font-family: 'DM Mono', monospace; font-size: 0.62rem; color: var(--muted); }
+
+  /* ─── BOOKS VIEW ─── */
+  .books-toolbar {
+    display: flex;
+    gap: 0.7rem;
+    margin-bottom: 1.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .search-input {
+    flex: 1;
+    min-width: 180px;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    background: white;
+    font-family: 'Lora', serif;
+    font-size: 0.9rem;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-input:focus { border-color: var(--amber); }
+  .filter-select {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    background: white;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--ink);
+    cursor: pointer;
+    outline: none;
+  }
+
+  .btn-primary {
+    padding: 8px 18px;
+    border-radius: var(--r);
+    border: none;
+    background: var(--ink);
+    color: var(--amber-light);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary:hover { background: var(--amber); color: var(--ink); }
+
+  .books-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+  }
+
+  .book-list-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .book-list-card:hover { box-shadow: 0 4px 16px var(--shadow); transform: translateY(-1px); }
+
+  .book-status-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    padding: 2px 8px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+  }
+  .status-reading { background: rgba(200,134,10,0.12); color: var(--amber); border: 1px solid rgba(200,134,10,0.3); }
+  .status-completed { background: rgba(74,103,65,0.12); color: var(--sage); border: 1px solid rgba(74,103,65,0.3); }
+  .status-queued { background: rgba(122,110,96,0.1); color: var(--muted); border: 1px solid var(--border); }
+
+  .book-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.3rem;
+  }
+  .book-actions button {
+    flex: 1;
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--cream);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    cursor: pointer;
+    transition: all 0.18s;
+    color: var(--muted);
+  }
+  .book-actions button:hover { background: var(--ink); color: var(--amber-light); border-color: var(--ink); }
+  .book-actions button.danger:hover { background: var(--rust); color: white; border-color: var(--rust); }
+
+  /* ─── READING SESSION ─── */
+  .reader-panel {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 2rem;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+  .reader-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .reader-book-info { flex: 1; }
+  .reader-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 700; margin-bottom: 0.2rem; }
+  .reader-author { color: var(--muted); font-style: italic; font-size: 0.85rem; }
+
+  .timer-display {
+    text-align: center;
+    margin: 2rem 0;
+  }
+  .timer-circle {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    border: 3px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    position: relative;
+    background: var(--cream);
+  }
+  .timer-circle svg {
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    width: 186px;
+    height: 186px;
+    transform: rotate(-90deg);
+  }
+  .timer-circle .timer-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 2.4rem;
+    font-weight: 500;
+    color: var(--ink);
+    z-index: 1;
+    letter-spacing: -1px;
+  }
+  .timer-controls {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin: 1rem 0;
+  }
+  .timer-btn {
+    padding: 10px 24px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
+  }
+  .timer-btn.start { background: var(--ink); color: var(--amber-light); }
+  .timer-btn.start:hover { background: var(--amber); color: var(--ink); }
+  .timer-btn.pause { background: var(--cream); border: 1px solid var(--border); color: var(--muted); }
+  .timer-btn.pause:hover { background: var(--parchment); color: var(--ink); }
+
+  .session-log-form {
+    background: var(--cream);
+    border-radius: var(--r);
+    padding: 1.2rem;
+    margin-top: 1.5rem;
+  }
+  .form-row { display: flex; gap: 1rem; margin-bottom: 0.8rem; }
+  .form-field { flex: 1; display: flex; flex-direction: column; gap: 0.3rem; }
+  .form-label { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .form-input {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: white;
+    font-family: 'Lora', serif;
+    font-size: 0.9rem;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color: var(--amber); }
+  textarea.form-input { resize: vertical; min-height: 80px; }
+
+  /* ─── RIGHT PANEL ─── */
+  .right-panel {
+    background: var(--cream);
+    border-left: 1px solid var(--border);
+    padding: 1.5rem 1.2rem;
+    overflow-y: auto;
+  }
+  .panel-section { margin-bottom: 2rem; }
+  .panel-section-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.8rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .reading-goals { display: flex; flex-direction: column; gap: 0.6rem; }
+  .goal-item {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 0.8rem;
+  }
+  .goal-name { font-size: 0.82rem; font-weight: 600; margin-bottom: 0.4rem; }
+  .goal-progress-bar-wrap { background: var(--cream); border-radius: 10px; height: 5px; margin-bottom: 0.3rem; }
+  .goal-progress-fill {
+    height: 100%;
+    border-radius: 10px;
+    background: linear-gradient(90deg, var(--sage), #6b9e5f);
+    transition: width 0.4s;
+  }
+  .goal-info { display: flex; justify-content: space-between; font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--muted); }
+
+  .recent-sessions { display: flex; flex-direction: column; gap: 0.5rem; }
+  .session-item {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 0.7rem 0.8rem;
+  }
+  .session-item-book { font-size: 0.82rem; font-weight: 600; margin-bottom: 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .session-item-meta {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+  }
+
+  /* ─── MODAL ─── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(26,18,8,0.55);
+    backdrop-filter: blur(3px);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 480px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    animation: modalIn 0.25s ease;
+  }
+  @keyframes modalIn {
+    from { transform: translateY(20px) scale(0.96); opacity: 0; }
+    to { transform: none; opacity: 1; }
+  }
+  .modal-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 1.2rem;
+  }
+  .modal-actions { display: flex; gap: 0.7rem; justify-content: flex-end; margin-top: 1.5rem; }
+  .btn-cancel {
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--cream);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    cursor: pointer;
+    color: var(--muted);
+    transition: all 0.18s;
+  }
+  .btn-cancel:hover { background: var(--parchment); color: var(--ink); }
+
+  /* ─── TOAST ─── */
+  .toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; z-index: 300; }
+  .toast {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    border-left: 3px solid var(--amber);
+    animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  }
+  @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateX(100%); } }
+
+  /* ─── QUOTES ─── */
+  .quote-card {
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: var(--r);
+    padding: 1.2rem;
+    margin-bottom: 2rem;
+    position: relative;
+  }
+  .quote-card::before {
+    content: '"';
+    font-family: 'Playfair Display', serif;
+    font-size: 4rem;
+    color: var(--amber);
+    line-height: 0;
+    position: absolute;
+    top: 1.8rem;
+    left: 1rem;
+    opacity: 0.5;
+  }
+  .quote-text {
+    font-style: italic;
+    font-size: 0.88rem;
+    padding-left: 1.5rem;
+    line-height: 1.6;
+    color: rgba(245,239,230,0.9);
+  }
+  .quote-author {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--amber-light);
+    margin-top: 0.6rem;
+    padding-left: 1.5rem;
+  }
+
+  /* ─── COURSES VIEW ─── */
+  .courses-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+  .course-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    overflow: hidden;
+    transition: all 0.2s;
+  }
+  .course-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px var(--shadow); }
+  .course-card-header {
+    padding: 1rem 1.2rem;
+    color: white;
+    font-weight: 600;
+  }
+  .course-card-body { padding: 1rem 1.2rem; }
+  .course-card-stat { display: flex; justify-content: space-between; font-family: 'DM Mono', monospace; font-size: 0.72rem; margin-bottom: 0.4rem; }
+  .course-card-stat-label { color: var(--muted); }
+  .course-card-stat-value { color: var(--ink); font-weight: 500; }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 1100px) {
+    .layout { grid-template-columns: 220px 1fr; }
+    .right-panel { display: none; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 700px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .dash-hero { flex-direction: column; gap: 1rem; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">📖 <span>Folio</span></div>
+  <div class="header-right">
+    <span class="semester-badge" id="semesterLabel">Spring 2025</span>
+    <button class="btn-sm" onclick="openModal('semesterModal')">Change Semester</button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-section-label">Navigate</div>
+    <div class="nav-item active" onclick="switchView('dashboard', this)">
+      <span class="icon">🏠</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="switchView('books', this)">
+      <span class="icon">📚</span> My Books
+    </div>
+    <div class="nav-item" onclick="switchView('reader', this)">
+      <span class="icon">⏱️</span> Reading Session
+    </div>
+    <div class="nav-item" onclick="switchView('courses', this)">
+      <span class="icon">🎓</span> Courses
+    </div>
+    <div class="nav-item" onclick="switchView('goals', this)">
+      <span class="icon">🎯</span> Goals
+    </div>
+
+    <div class="sidebar-section-label">Quick Add</div>
+    <div class="nav-item" onclick="openModal('addBookModal')">
+      <span class="icon">➕</span> Add Book
+    </div>
+    <div class="nav-item" onclick="openModal('addCourseModal')">
+      <span class="icon">➕</span> Add Course
+    </div>
+
+    <div class="mini-stats">
+      <div class="mini-stats-title">This Week</div>
+      <div class="mini-stat">
+        <span class="mini-stat-label">Sessions</span>
+        <span class="mini-stat-value" id="sideWeekSessions">0</span>
+      </div>
+      <div class="mini-stat">
+        <span class="mini-stat-label">Pages</span>
+        <span class="mini-stat-value" id="sideWeekPages">0</span>
+      </div>
+      <div class="mini-stat">
+        <span class="mini-stat-label">Minutes</span>
+        <span class="mini-stat-value" id="sideWeekMins">0</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main>
+
+    <!-- DASHBOARD -->
+    <div id="view-dashboard" class="view active">
+      <div class="dash-hero">
+        <div>
+          <h1>Good <em id="greeting">morning</em>,<br>Scholar 📜</h1>
+          <p id="dashDate">Loading date…</p>
+        </div>
+        <div class="streak">
+          <div class="streak-num" id="streakNum">0</div>
+          <div class="streak-label">day streak 🔥</div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-card-label">Books This Sem</div>
+          <div class="stat-card-value" id="statBooks">0</div>
+          <div class="stat-card-sub">Across all courses</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Pages Read</div>
+          <div class="stat-card-value" id="statPages">0</div>
+          <div class="stat-card-sub">Total this semester</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Hours Read</div>
+          <div class="stat-card-value" id="statHours">0</div>
+          <div class="stat-card-sub">Session time tracked</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Completed</div>
+          <div class="stat-card-value" id="statCompleted">0</div>
+          <div class="stat-card-sub">Books finished</div>
+        </div>
+      </div>
+
+      <div class="quote-card" id="quoteCard">
+        <div class="quote-text" id="quoteText">Loading quote…</div>
+        <div class="quote-author" id="quoteAuthor">— Author</div>
+      </div>
+
+      <div class="section-title">
+        Currently Reading
+        <button class="action-btn" onclick="switchView('books', document.querySelector('.nav-item:nth-child(3)'))">All Books →</button>
+      </div>
+      <div class="currently-reading" id="currentlyReadingCards"></div>
+
+      <div class="section-title" style="margin-top:1.5rem;">Reading Activity</div>
+      <div style="background:white;border:1px solid var(--border);border-radius:var(--r);padding:1.2rem;">
+        <div class="heatmap-months" id="heatmapMonths"></div>
+        <div id="heatmapGrid"></div>
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.8rem;font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted);">
+          <span>Less</span>
+          <div class="heatmap-cell" style="width:16px;height:16px;"></div>
+          <div class="heatmap-cell" data-level="1" style="width:16px;height:16px;"></div>
+          <div class="heatmap-cell" data-level="2" style="width:16px;height:16px;"></div>
+          <div class="heatmap-cell" data-level="3" style="width:16px;height:16px;"></div>
+          <div class="heatmap-cell" data-level="4" style="width:16px;height:16px;"></div>
+          <span>More</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOOKS -->
+    <div id="view-books" class="view">
+      <div class="section-title">
+        My Library
+        <button class="action-btn btn-primary" onclick="openModal('addBookModal')">+ Add Book</button>
+      </div>
+      <div class="books-toolbar">
+        <input type="text" class="search-input" id="bookSearch" placeholder="Search books, authors, courses…" oninput="renderBooks()">
+        <select class="filter-select" id="statusFilter" onchange="renderBooks()">
+          <option value="all">All Status</option>
+          <option value="reading">Reading</option>
+          <option value="completed">Completed</option>
+          <option value="queued">Queued</option>
+        </select>
+        <select class="filter-select" id="courseFilter" onchange="renderBooks()">
+          <option value="all">All Courses</option>
+        </select>
+        <select class="filter-select" id="semesterFilter" onchange="renderBooks()">
+          <option value="all">All Semesters</option>
+        </select>
+      </div>
+      <div class="books-grid" id="booksGrid"></div>
+    </div>
+
+    <!-- READER -->
+    <div id="view-reader" class="view">
+      <div class="section-title">Reading Session</div>
+      <div class="reader-panel">
+        <div class="reader-header">
+          <div class="reader-book-info">
+            <div class="reader-title" id="readerBookTitle">Select a book to start</div>
+            <div class="reader-author" id="readerBookAuthor">—</div>
+          </div>
+          <select class="filter-select" id="readerBookSelect" onchange="selectReaderBook(this.value)" style="min-width:160px;">
+            <option value="">— Pick book —</option>
+          </select>
+        </div>
+
+        <div class="timer-display">
+          <div class="timer-circle">
+            <svg viewBox="0 0 186 186">
+              <circle cx="93" cy="93" r="90" fill="none" stroke="var(--border)" stroke-width="3"/>
+              <circle id="timerArc" cx="93" cy="93" r="90" fill="none" stroke="var(--amber)" stroke-width="3"
+                stroke-dasharray="565.5" stroke-dashoffset="565.5" stroke-linecap="round"/>
+            </svg>
+            <span class="timer-text" id="timerDisplay">25:00</span>
+          </div>
+          <div class="timer-controls">
+            <button class="timer-btn start" id="timerStartBtn" onclick="toggleTimer()">▶ Start</button>
+            <button class="timer-btn pause" onclick="resetTimer()">↺ Reset</button>
+          </div>
+          <div style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--muted);margin-top:0.5rem;">
+            Pomodoro: <span id="pomodoroMode">Focus</span> session
+          </div>
+        </div>
+
+        <div class="session-log-form">
+          <div style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.8rem;">Log Reading Progress</div>
+          <div class="form-row">
+            <div class="form-field">
+              <label class="form-label">Start Page</label>
+              <input type="number" class="form-input" id="startPage" placeholder="e.g. 45" min="0">
+            </div>
+            <div class="form-field">
+              <label class="form-label">End Page</label>
+              <input type="number" class="form-input" id="endPage" placeholder="e.g. 82" min="0">
+            </div>
+            <div class="form-field">
+              <label class="form-label">Minutes Read</label>
+              <input type="number" class="form-input" id="sessionMins" placeholder="e.g. 45" min="0">
+            </div>
+          </div>
+          <div class="form-field" style="margin-bottom:0.8rem;">
+            <label class="form-label">Notes / Annotations</label>
+            <textarea class="form-input" id="sessionNotes" placeholder="Key insights, questions, quotes…"></textarea>
+          </div>
+          <button class="btn-primary" style="width:100%;" onclick="logSession()">📝 Log Session</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- COURSES -->
+    <div id="view-courses" class="view">
+      <div class="section-title">
+        Courses
+        <button class="action-btn btn-primary" onclick="openModal('addCourseModal')">+ Add Course</button>
+      </div>
+      <div class="courses-grid" id="coursesGrid"></div>
+    </div>
+
+    <!-- GOALS -->
+    <div id="view-goals" class="view">
+      <div class="section-title">
+        Reading Goals
+        <button class="action-btn btn-primary" onclick="openModal('addGoalModal')">+ Add Goal</button>
+      </div>
+      <div id="goalsGrid" style="display:flex;flex-direction:column;gap:1rem;max-width:600px;"></div>
+    </div>
+
+  </main>
+
+  <!-- RIGHT PANEL -->
+  <aside class="right-panel">
+    <div class="panel-section">
+      <div class="panel-section-title">Active Goals</div>
+      <div class="reading-goals" id="rightGoals"></div>
+    </div>
+    <div class="panel-section">
+      <div class="panel-section-title">Recent Sessions</div>
+      <div class="recent-sessions" id="rightSessions"></div>
+    </div>
+  </aside>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- MODAL: Add Book -->
+<div class="modal-overlay" id="addBookModal">
+  <div class="modal">
+    <div class="modal-title">Add a Book</div>
+    <div class="form-field" style="margin-bottom:0.8rem;">
+      <label class="form-label">Title *</label>
+      <input type="text" class="form-input" id="newBookTitle" placeholder="Book title">
+    </div>
+    <div class="form-field" style="margin-bottom:0.8rem;">
+      <label class="form-label">Author</label>
+      <input type="text" class="form-input" id="newBookAuthor" placeholder="Author name">
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label class="form-label">Total Pages</label>
+        <input type="number" class="form-input" id="newBookPages" placeholder="320" min="1">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Course</label>
+        <select class="form-input" id="newBookCourse">
+          <option value="">None</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row" style="margin-top:0.5rem;">
+      <div class="form-field">
+        <label class="form-label">Status</label>
+        <select class="form-input" id="newBookStatus">
+          <option value="queued">Queued</option>
+          <option value="reading">Currently Reading</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Semester</label>
+        <input type="text" class="form-input" id="newBookSemester" placeholder="e.g. Spring 2025">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('addBookModal')">Cancel</button>
+      <button class="btn-primary" onclick="addBook()">Add Book</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Add Course -->
+<div class="modal-overlay" id="addCourseModal">
+  <div class="modal">
+    <div class="modal-title">Add a Course</div>
+    <div class="form-row">
+      <div class="form-field">
+        <label class="form-label">Course Name *</label>
+        <input type="text" class="form-input" id="newCourseName" placeholder="e.g. Modern Literature">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Course Code</label>
+        <input type="text" class="form-input" id="newCourseCode" placeholder="LIT 301">
+      </div>
+    </div>
+    <div class="form-row" style="margin-top:0.8rem;">
+      <div class="form-field">
+        <label class="form-label">Semester</label>
+        <input type="text" class="form-input" id="newCourseSemester" placeholder="Spring 2025">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Color</label>
+        <select class="form-input" id="newCourseColor">
+          <option value="#1a1208">Dark Ink</option>
+          <option value="#c8860a">Amber</option>
+          <option value="#9e3d1f">Rust</option>
+          <option value="#4a6741">Sage</option>
+          <option value="#3d5f8a">Navy</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('addCourseModal')">Cancel</button>
+      <button class="btn-primary" onclick="addCourse()">Add Course</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Add Goal -->
+<div class="modal-overlay" id="addGoalModal">
+  <div class="modal">
+    <div class="modal-title">Set a Reading Goal</div>
+    <div class="form-field" style="margin-bottom:0.8rem;">
+      <label class="form-label">Goal Description *</label>
+      <input type="text" class="form-input" id="newGoalName" placeholder="e.g. Read 10 books this semester">
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label class="form-label">Type</label>
+        <select class="form-input" id="newGoalType">
+          <option value="books">Books</option>
+          <option value="pages">Pages</option>
+          <option value="minutes">Minutes</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Target</label>
+        <input type="number" class="form-input" id="newGoalTarget" placeholder="10" min="1">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('addGoalModal')">Cancel</button>
+      <button class="btn-primary" onclick="addGoal()">Set Goal</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Update Progress -->
+<div class="modal-overlay" id="updateProgressModal">
+  <div class="modal">
+    <div class="modal-title">Update Progress</div>
+    <input type="hidden" id="updateBookId">
+    <div class="form-field" style="margin-bottom:0.8rem;">
+      <label class="form-label">Current Page</label>
+      <input type="number" class="form-input" id="updateCurrentPage" placeholder="Current page" min="0">
+    </div>
+    <div class="form-field" style="margin-bottom:0.8rem;">
+      <label class="form-label">Status</label>
+      <select class="form-input" id="updateStatus">
+        <option value="queued">Queued</option>
+        <option value="reading">Currently Reading</option>
+        <option value="completed">Completed</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('updateProgressModal')">Cancel</button>
+      <button class="btn-primary" onclick="updateBookProgress()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Semester -->
+<div class="modal-overlay" id="semesterModal">
+  <div class="modal">
+    <div class="modal-title">Change Semester</div>
+    <div class="form-field">
+      <label class="form-label">Current Semester</label>
+      <input type="text" class="form-input" id="newSemesterName" placeholder="e.g. Fall 2025">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('semesterModal')">Cancel</button>
+      <button class="btn-primary" onclick="changeSemester()">Update</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA STORE ──────────────────────────────────────────
+const STORAGE_KEY = 'folio_data_v2';
+
+const defaultData = {
+  semester: 'Spring 2025',
+  books: [
+    { id: 1, title: 'Thinking, Fast and Slow', author: 'Daniel Kahneman', totalPages: 499, currentPage: 120, status: 'reading', course: 'PSY 301', semester: 'Spring 2025', color: 'amber', addedAt: Date.now() - 86400000 * 5 },
+    { id: 2, title: 'The Republic', author: 'Plato', totalPages: 368, currentPage: 368, status: 'completed', course: 'PHI 101', semester: 'Spring 2025', color: 'rust', addedAt: Date.now() - 86400000 * 20 },
+    { id: 3, title: 'Sapiens', author: 'Yuval Noah Harari', totalPages: 443, currentPage: 0, status: 'queued', course: 'HIS 201', semester: 'Spring 2025', color: 'sage', addedAt: Date.now() - 86400000 * 2 },
+    { id: 4, title: 'Elements of Statistical Learning', author: 'Hastie, Tibshirani & Friedman', totalPages: 764, currentPage: 200, status: 'reading', course: 'STAT 401', semester: 'Spring 2025', color: 'ink', addedAt: Date.now() - 86400000 * 10 },
+  ],
+  courses: [
+    { id: 1, name: 'Psychology of Decision Making', code: 'PSY 301', semester: 'Spring 2025', color: '#c8860a' },
+    { id: 2, name: 'Introduction to Philosophy', code: 'PHI 101', semester: 'Spring 2025', color: '#9e3d1f' },
+    { id: 3, name: 'World History', code: 'HIS 201', semester: 'Spring 2025', color: '#4a6741' },
+    { id: 4, name: 'Statistical Learning', code: 'STAT 401', semester: 'Spring 2025', color: '#1a1208' },
+  ],
+  sessions: [
+    { id: 1, bookId: 1, bookTitle: 'Thinking, Fast and Slow', startPage: 80, endPage: 120, minutes: 45, notes: 'Anchoring bias is fascinating.', date: Date.now() - 86400000 * 1 },
+    { id: 2, bookId: 4, bookTitle: 'Elements of Statistical Learning', startPage: 150, endPage: 200, minutes: 60, notes: 'Chapter on SVMs.', date: Date.now() - 86400000 * 2 },
+  ],
+  goals: [
+    { id: 1, name: 'Read 6 books this semester', type: 'books', target: 6, current: 0 },
+    { id: 2, name: 'Read 2000 pages this semester', type: 'pages', target: 2000, current: 0 },
+    { id: 3, name: 'Read 3000 minutes this semester', type: 'minutes', target: 3000, current: 0 },
+  ],
+  activityLog: {},
+};
+
+function load() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultData; } catch { return defaultData; } }
+function save(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+
+let data = load();
+
+// ── QUOTES ─────────────────────────────────────────────
+const quotes = [
+  { text: "A reader lives a thousand lives before he dies. The man who never reads lives only one.", author: "George R.R. Martin" },
+  { text: "Not all those who wander are lost.", author: "J.R.R. Tolkien" },
+  { text: "The more that you read, the more things you will know.", author: "Dr. Seuss" },
+  { text: "I cannot live without books.", author: "Thomas Jefferson" },
+  { text: "Reading is to the mind what exercise is to the body.", author: "Joseph Addison" },
+  { text: "A book is a dream that you hold in your hand.", author: "Neil Gaiman" },
+  { text: "Knowledge is power.", author: "Francis Bacon" },
+  { text: "The universe is made of stories, not atoms.", author: "Muriel Rukeyser" },
+];
+
+// ── TIMER ──────────────────────────────────────────────
+let timerInterval = null;
+let timerSeconds = 25 * 60;
+let timerRunning = false;
+let timerTotal = 25 * 60;
+const ARC_CIRC = 2 * Math.PI * 90;
+
+function toggleTimer() {
+  if (timerRunning) {
+    clearInterval(timerInterval);
+    timerRunning = false;
+    document.getElementById('timerStartBtn').textContent = '▶ Resume';
+  } else {
+    timerRunning = true;
+    document.getElementById('timerStartBtn').textContent = '⏸ Pause';
+    timerInterval = setInterval(() => {
+      timerSeconds--;
+      if (timerSeconds <= 0) { clearInterval(timerInterval); timerRunning = false; toast('⏰ Session complete!'); timerSeconds = 0; }
+      updateTimerUI();
+      document.getElementById('sessionMins').value = Math.floor((timerTotal - timerSeconds) / 60) || '';
+    }, 1000);
+  }
+}
+
+function resetTimer() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+  timerSeconds = 25 * 60;
+  timerTotal = 25 * 60;
+  updateTimerUI();
+  document.getElementById('timerStartBtn').textContent = '▶ Start';
+}
+
+function updateTimerUI() {
+  const m = Math.floor(timerSeconds / 60);
+  const s = timerSeconds % 60;
+  document.getElementById('timerDisplay').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  const progress = 1 - timerSeconds / timerTotal;
+  const offset = ARC_CIRC * (1 - progress);
+  document.getElementById('timerArc').style.strokeDashoffset = offset;
+}
+
+function selectReaderBook(id) {
+  if (!id) return;
+  const book = data.books.find(b => b.id == id);
+  if (!book) return;
+  document.getElementById('readerBookTitle').textContent = book.title;
+  document.getElementById('readerBookAuthor').textContent = book.author;
+  document.getElementById('startPage').value = book.currentPage || '';
+}
+
+// ── VIEWS ──────────────────────────────────────────────
+function switchView(view, el) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('view-' + view).classList.add('active');
+  if (el) el.classList.add('active');
+  renderView(view);
+}
+
+function renderView(view) {
+  if (view === 'dashboard') renderDashboard();
+  else if (view === 'books') renderBooks();
+  else if (view === 'courses') renderCourses();
+  else if (view === 'goals') renderGoals();
+  else if (view === 'reader') renderReader();
+}
+
+// ── DASHBOARD ─────────────────────────────────────────
+function renderDashboard() {
+  const now = new Date();
+  const hr = now.getHours();
+  document.getElementById('greeting').textContent = hr < 12 ? 'morning' : hr < 17 ? 'afternoon' : 'evening';
+  document.getElementById('dashDate').textContent = now.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  // Stats
+  const semBooks = data.books.filter(b => b.semester === data.semester);
+  const totalPages = data.sessions.reduce((a,s) => a + (s.endPage - s.startPage), 0);
+  const totalMins = data.sessions.reduce((a,s) => a + s.minutes, 0);
+  const completed = data.books.filter(b => b.status === 'completed').length;
+  document.getElementById('statBooks').textContent = semBooks.length;
+  document.getElementById('statPages').textContent = Math.max(0, totalPages).toLocaleString();
+  document.getElementById('statHours').textContent = (totalMins / 60).toFixed(1);
+  document.getElementById('statCompleted').textContent = completed;
+
+  // Streak
+  const streak = calcStreak();
+  document.getElementById('streakNum').textContent = streak;
+
+  // Quote
+  const q = quotes[Math.floor(Math.random() * quotes.length)];
+  document.getElementById('quoteText').textContent = q.text;
+  document.getElementById('quoteAuthor').textContent = '— ' + q.author;
+
+  // Currently reading
+  const reading = data.books.filter(b => b.status === 'reading');
+  const colors = ['amber','rust','sage','ink'];
+  const container = document.getElementById('currentlyReadingCards');
+  container.innerHTML = reading.length ? reading.map((b,i) => {
+    const pct = b.totalPages ? Math.round((b.currentPage / b.totalPages) * 100) : 0;
+    return `<div class="book-card color-${colors[i%colors.length]}" onclick="openUpdateModal(${b.id})">
+      <div class="book-card-course">${b.course || 'General'}</div>
+      <div class="book-card-title">${b.title}</div>
+      <div class="book-card-author">${b.author}</div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+      <div class="progress-info"><span>p. ${b.currentPage} / ${b.totalPages}</span><span>${pct}%</span></div>
+    </div>`;
+  }).join('') : '<div style="color:var(--muted);font-style:italic;font-size:0.9rem;padding:1rem 0;">No books in progress. Add one to get started!</div>';
+
+  // Heatmap
+  renderHeatmap();
+
+  // Sidebar stats
+  const wkStart = new Date(); wkStart.setDate(wkStart.getDate() - wkStart.getDay());
+  const wkSessions = data.sessions.filter(s => new Date(s.date) >= wkStart);
+  document.getElementById('sideWeekSessions').textContent = wkSessions.length;
+  document.getElementById('sideWeekPages').textContent = Math.max(0, wkSessions.reduce((a,s) => a + (s.endPage - s.startPage), 0));
+  document.getElementById('sideWeekMins').textContent = wkSessions.reduce((a,s) => a + s.minutes, 0);
+
+  // Right panel
+  renderRightPanel();
+}
+
+function renderHeatmap() {
+  const WEEKS = 16;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = new Date(today);
+  start.setDate(start.getDate() - (WEEKS * 7 - 1));
+
+  // Build activity map
+  const actMap = {};
+  data.sessions.forEach(s => {
+    const d = new Date(s.date); d.setHours(0,0,0,0);
+    const key = d.toISOString().slice(0,10);
+    actMap[key] = (actMap[key] || 0) + (s.endPage - s.startPage);
+  });
+
+  const days = [];
+  for (let i = 0; i < WEEKS * 7; i++) {
+    const d = new Date(start); d.setDate(d.getDate() + i);
+    const key = d.toISOString().slice(0,10);
+    const pages = actMap[key] || 0;
+    let level = 0;
+    if (pages > 0) level = 1;
+    if (pages > 20) level = 2;
+    if (pages > 50) level = 3;
+    if (pages > 80) level = 4;
+    days.push({ date: d, key, level, pages });
+  }
+
+  const grid = document.getElementById('heatmapGrid');
+  const rows = ['S','M','T','W','T','F','S'];
+  grid.innerHTML = rows.map((label, dow) => {
+    const cells = days.filter((_,i) => i % 7 === dow);
+    return `<div class="heatmap-row">
+      <span class="heatmap-label">${label}</span>
+      ${cells.map(d => `<div class="heatmap-cell" data-level="${d.level}" title="${d.key}: ${d.pages} pages"></div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+function calcStreak() {
+  const actDays = new Set(data.sessions.map(s => new Date(s.date).toISOString().slice(0,10)));
+  let streak = 0;
+  const d = new Date(); d.setHours(0,0,0,0);
+  while (actDays.has(d.toISOString().slice(0,10))) {
+    streak++;
+    d.setDate(d.getDate() - 1);
+  }
+  return streak;
+}
+
+// ── BOOKS ─────────────────────────────────────────────
+function renderBooks() {
+  const query = (document.getElementById('bookSearch')?.value || '').toLowerCase();
+  const statusF = document.getElementById('statusFilter')?.value || 'all';
+  const courseF = document.getElementById('courseFilter')?.value || 'all';
+  const semF = document.getElementById('semesterFilter')?.value || 'all';
+
+  // Populate filters
+  const courses = [...new Set(data.books.map(b => b.course).filter(Boolean))];
+  const semesters = [...new Set(data.books.map(b => b.semester).filter(Boolean))];
+  const cf = document.getElementById('courseFilter');
+  if (cf) { const cur = cf.value; cf.innerHTML = '<option value="all">All Courses</option>' + courses.map(c => `<option value="${c}">${c}</option>`).join(''); cf.value = cur || 'all'; }
+  const sf = document.getElementById('semesterFilter');
+  if (sf) { const cur = sf.value; sf.innerHTML = '<option value="all">All Semesters</option>' + semesters.map(s => `<option value="${s}">${s}</option>`).join(''); sf.value = cur || 'all'; }
+
+  let books = data.books.filter(b => {
+    if (statusF !== 'all' && b.status !== statusF) return false;
+    if (courseF !== 'all' && b.course !== courseF) return false;
+    if (semF !== 'all' && b.semester !== semF) return false;
+    if (query && !b.title.toLowerCase().includes(query) && !b.author?.toLowerCase().includes(query) && !b.course?.toLowerCase().includes(query)) return false;
+    return true;
+  });
+
+  const grid = document.getElementById('booksGrid');
+  if (!grid) return;
+  grid.innerHTML = books.length ? books.map(b => {
+    const pct = b.totalPages ? Math.round((b.currentPage / b.totalPages) * 100) : 0;
+    const badgeClass = { reading:'status-reading', completed:'status-completed', queued:'status-queued' }[b.status];
+    const badgeLabel = { reading:'Reading', completed:'Completed', queued:'Queued' }[b.status];
+    return `<div class="book-list-card">
+      <div><span class="book-status-badge ${badgeClass}">${badgeLabel}</span></div>
+      <div style="font-weight:600;font-size:0.95rem;line-height:1.3">${b.title}</div>
+      <div style="font-size:0.8rem;color:var(--muted);font-style:italic">${b.author || 'Unknown Author'}</div>
+      ${b.course ? `<div style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted);letter-spacing:0.06em">${b.course} · ${b.semester || ''}</div>` : ''}
+      <div class="progress-bar-wrap" style="margin:0"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+      <div class="progress-info"><span>p. ${b.currentPage} / ${b.totalPages}</span><span>${pct}%</span></div>
+      <div class="book-actions">
+        <button onclick="openUpdateModal(${b.id})">✏️ Update</button>
+        <button onclick="openReaderWithBook(${b.id})">📖 Read</button>
+        <button class="danger" onclick="deleteBook(${b.id})">🗑️ Delete</button>
+      </div>
+    </div>`;
+  }).join('') : `<div style="color:var(--muted);font-style:italic;padding:2rem;grid-column:1/-1">No books found. Try changing filters or add a new book!</div>`;
+}
+
+// ── COURSES ────────────────────────────────────────────
+function renderCourses() {
+  const grid = document.getElementById('coursesGrid');
+  if (!grid) return;
+  grid.innerHTML = data.courses.map(c => {
+    const books = data.books.filter(b => b.course === c.code);
+    const completed = books.filter(b => b.status === 'completed').length;
+    const pages = data.sessions.filter(s => books.some(b => b.id === s.bookId)).reduce((a,s) => a + (s.endPage - s.startPage), 0);
+    return `<div class="course-card">
+      <div class="course-card-header" style="background:${c.color}">
+        <div style="font-family:'DM Mono',monospace;font-size:0.7rem;opacity:0.8">${c.code}</div>
+        <div style="font-size:1rem;margin-top:0.2rem">${c.name}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:0.65rem;opacity:0.7;margin-top:0.2rem">${c.semester}</div>
+      </div>
+      <div class="course-card-body">
+        <div class="course-card-stat"><span class="course-card-stat-label">Books</span><span class="course-card-stat-value">${books.length}</span></div>
+        <div class="course-card-stat"><span class="course-card-stat-label">Completed</span><span class="course-card-stat-value">${completed}</span></div>
+        <div class="course-card-stat"><span class="course-card-stat-label">Pages Read</span><span class="course-card-stat-value">${Math.max(0,pages)}</span></div>
+        <button class="book-actions" style="display:flex;gap:0;margin-top:0.6rem" onclick="event.stopPropagation(); deleteCourse(${c.id})">
+          <button style="flex:1;padding:5px;border-radius:4px;border:1px solid var(--border);background:var(--cream);font-family:'DM Mono',monospace;font-size:0.65rem;cursor:pointer;color:var(--muted);" onmouseover="this.style.background='#9e3d1f';this.style.color='white'" onmouseout="this.style.background='var(--cream)';this.style.color='var(--muted)'">🗑️ Remove Course</button>
+        </button>
+      </div>
+    </div>`;
+  }).join('') || `<div style="color:var(--muted);font-style:italic;padding:1rem">No courses yet. Add your first course!</div>`;
+}
+
+// ── GOALS ─────────────────────────────────────────────
+function calcGoalCurrent(goal) {
+  if (goal.type === 'books') return data.books.filter(b => b.status === 'completed').length;
+  if (goal.type === 'pages') return Math.max(0, data.sessions.reduce((a,s) => a + (s.endPage - s.startPage), 0));
+  if (goal.type === 'minutes') return data.sessions.reduce((a,s) => a + s.minutes, 0);
+  return 0;
+}
+
+function renderGoals() {
+  const container = document.getElementById('goalsGrid');
+  if (!container) return;
+  container.innerHTML = data.goals.map(g => {
+    const current = calcGoalCurrent(g);
+    const pct = Math.min(100, Math.round((current / g.target) * 100));
+    return `<div class="book-list-card">
+      <div style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700">${g.name}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--muted)">${g.type.toUpperCase()} · Target: ${g.target}</div>
+      <div class="goal-progress-bar-wrap"><div class="goal-progress-fill" style="width:${pct}%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--muted)">
+        <span>${current} / ${g.target} ${g.type}</span><span>${pct}%</span>
+      </div>
+      <div class="book-actions"><button class="danger" onclick="deleteGoal(${g.id})">🗑️ Remove Goal</button></div>
+    </div>`;
+  }).join('') || `<div style="color:var(--muted);font-style:italic">No goals set. Add your first reading goal!</div>`;
+}
+
+// ── RIGHT PANEL ────────────────────────────────────────
+function renderRightPanel() {
+  // Goals
+  const rg = document.getElementById('rightGoals');
+  if (rg) rg.innerHTML = data.goals.slice(0,3).map(g => {
+    const current = calcGoalCurrent(g);
+    const pct = Math.min(100, Math.round((current / g.target) * 100));
+    return `<div class="goal-item">
+      <div class="goal-name">${g.name}</div>
+      <div class="goal-progress-bar-wrap"><div class="goal-progress-fill" style="width:${pct}%"></div></div>
+      <div class="goal-info"><span>${current} / ${g.target}</span><span>${pct}%</span></div>
+    </div>`;
+  }).join('') || '<div style="color:var(--muted);font-size:0.8rem;font-style:italic">No goals set</div>';
+
+  // Sessions
+  const rs = document.getElementById('rightSessions');
+  if (rs) rs.innerHTML = [...data.sessions].reverse().slice(0,5).map(s => {
+    const pages = Math.max(0, s.endPage - s.startPage);
+    const d = new Date(s.date);
+    const label = d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+    return `<div class="session-item">
+      <div class="session-item-book">${s.bookTitle}</div>
+      <div class="session-item-meta"><span>${label} · ${s.minutes}min</span><span>+${pages} pages</span></div>
+    </div>`;
+  }).join('') || '<div style="color:var(--muted);font-size:0.8rem;font-style:italic">No sessions logged</div>';
+}
+
+// ── READER ─────────────────────────────────────────────
+function renderReader() {
+  const sel = document.getElementById('readerBookSelect');
+  if (!sel) return;
+  const activeBooks = data.books.filter(b => b.status !== 'completed');
+  sel.innerHTML = '<option value="">— Pick book —</option>' + activeBooks.map(b => `<option value="${b.id}">${b.title}</option>`).join('');
+}
+
+function openReaderWithBook(id) {
+  switchView('reader', document.querySelector('.nav-item:nth-child(4)'));
+  setTimeout(() => {
+    document.getElementById('readerBookSelect').value = id;
+    selectReaderBook(id);
+  }, 50);
+}
+
+// ── MODALS ─────────────────────────────────────────────
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  if (id === 'addBookModal') {
+    // Populate course dropdown
+    const sel = document.getElementById('newBookCourse');
+    sel.innerHTML = '<option value="">None</option>' + data.courses.map(c => `<option value="${c.code}">${c.code} — ${c.name}</option>`).join('');
+    document.getElementById('newBookSemester').value = data.semester;
+  }
+  if (id === 'addCourseModal') document.getElementById('newCourseSemester').value = data.semester;
+  if (id === 'semesterModal') document.getElementById('newSemesterName').value = data.semester;
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }));
+
+function openUpdateModal(id) {
+  const book = data.books.find(b => b.id === id);
+  if (!book) return;
+  document.getElementById('updateBookId').value = id;
+  document.getElementById('updateCurrentPage').value = book.currentPage;
+  document.getElementById('updateStatus').value = book.status;
+  openModal('updateProgressModal');
+}
+
+function updateBookProgress() {
+  const id = +document.getElementById('updateBookId').value;
+  const page = +document.getElementById('updateCurrentPage').value;
+  const status = document.getElementById('updateStatus').value;
+  const book = data.books.find(b => b.id === id);
+  if (!book) return;
+  book.currentPage = page;
+  book.status = status;
+  if (status === 'completed' && page < book.totalPages) book.currentPage = book.totalPages;
+  save(data);
+  closeModal('updateProgressModal');
+  renderView(document.querySelector('.view.active').id.replace('view-',''));
+  toast('Progress updated!');
+}
+
+// ── ADD / DELETE ───────────────────────────────────────
+function addBook() {
+  const title = document.getElementById('newBookTitle').value.trim();
+  if (!title) { toast('Please enter a title.'); return; }
+  const book = {
+    id: Date.now(),
+    title,
+    author: document.getElementById('newBookAuthor').value.trim(),
+    totalPages: +document.getElementById('newBookPages').value || 0,
+    currentPage: 0,
+    status: document.getElementById('newBookStatus').value,
+    course: document.getElementById('newBookCourse').value,
+    semester: document.getElementById('newBookSemester').value || data.semester,
+    color: ['amber','rust','sage','ink'][Math.floor(Math.random()*4)],
+    addedAt: Date.now(),
+  };
+  data.books.push(book);
+  save(data);
+  closeModal('addBookModal');
+  document.getElementById('newBookTitle').value = '';
+  document.getElementById('newBookAuthor').value = '';
+  document.getElementById('newBookPages').value = '';
+  renderDashboard();
+  toast('Book added!');
+}
+
+function deleteBook(id) {
+  if (!confirm('Remove this book?')) return;
+  data.books = data.books.filter(b => b.id !== id);
+  save(data);
+  renderBooks();
+  toast('Book removed.');
+}
+
+function addCourse() {
+  const name = document.getElementById('newCourseName').value.trim();
+  const code = document.getElementById('newCourseCode').value.trim();
+  if (!name) { toast('Please enter a course name.'); return; }
+  data.courses.push({ id: Date.now(), name, code: code || name, semester: document.getElementById('newCourseSemester').value || data.semester, color: document.getElementById('newCourseColor').value });
+  save(data);
+  closeModal('addCourseModal');
+  document.getElementById('newCourseName').value = '';
+  document.getElementById('newCourseCode').value = '';
+  renderCourses();
+  toast('Course added!');
+}
+
+function deleteCourse(id) {
+  if (!confirm('Remove this course?')) return;
+  data.courses = data.courses.filter(c => c.id !== id);
+  save(data);
+  renderCourses();
+  toast('Course removed.');
+}
+
+function addGoal() {
+  const name = document.getElementById('newGoalName').value.trim();
+  const target = +document.getElementById('newGoalTarget').value;
+  if (!name || !target) { toast('Fill in all fields.'); return; }
+  data.goals.push({ id: Date.now(), name, type: document.getElementById('newGoalType').value, target });
+  save(data);
+  closeModal('addGoalModal');
+  document.getElementById('newGoalName').value = '';
+  document.getElementById('newGoalTarget').value = '';
+  renderGoals();
+  renderRightPanel();
+  toast('Goal set!');
+}
+
+function deleteGoal(id) {
+  data.goals = data.goals.filter(g => g.id !== id);
+  save(data);
+  renderGoals();
+  renderRightPanel();
+  toast('Goal removed.');
+}
+
+function logSession() {
+  const bookId = +document.getElementById('readerBookSelect').value;
+  if (!bookId) { toast('Select a book first.'); return; }
+  const book = data.books.find(b => b.id === bookId);
+  const startPage = +document.getElementById('startPage').value || 0;
+  const endPage = +document.getElementById('endPage').value || 0;
+  const minutes = +document.getElementById('sessionMins').value || 0;
+  const notes = document.getElementById('sessionNotes').value.trim();
+  if (!endPage || endPage <= startPage) { toast('End page must be greater than start page.'); return; }
+  const session = { id: Date.now(), bookId, bookTitle: book.title, startPage, endPage, minutes, notes, date: Date.now() };
+  data.sessions.push(session);
+  // Update book progress
+  if (endPage > book.currentPage) book.currentPage = endPage;
+  if (book.currentPage >= book.totalPages && book.totalPages > 0) book.status = 'completed';
+  // Log activity
+  const today = new Date().toISOString().slice(0,10);
+  data.activityLog[today] = (data.activityLog[today] || 0) + (endPage - startPage);
+  save(data);
+  // Clear
+  document.getElementById('startPage').value = endPage;
+  document.getElementById('endPage').value = '';
+  document.getElementById('sessionMins').value = '';
+  document.getElementById('sessionNotes').value = '';
+  resetTimer();
+  renderRightPanel();
+  toast(`✅ Session logged! +${endPage - startPage} pages`);
+}
+
+function changeSemester() {
+  const name = document.getElementById('newSemesterName').value.trim();
+  if (!name) { toast('Enter a semester name.'); return; }
+  data.semester = name;
+  document.getElementById('semesterLabel').textContent = name;
+  save(data);
+  closeModal('semesterModal');
+  renderDashboard();
+  toast('Semester updated!');
+}
+
+// ── TOAST ──────────────────────────────────────────────
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.getElementById('toastContainer').appendChild(t);
+  setTimeout(() => t.remove(), 3100);
+}
+
+// ── INIT ──────────────────────────────────────────────
+document.getElementById('semesterLabel').textContent = data.semester;
+renderDashboard();
+</script>
+</body>
+</html>
